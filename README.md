@@ -111,6 +111,40 @@ Type `exit` to quit.
 - Do not commit `.env` files or secrets
 - Use least-privilege DB credentials for analytics
 
+## Database Schema
+The agent expects a Postgres table like `nbfc_loan_leads`:
+
+```sql
+CREATE TABLE nbfc_loan_leads (
+    -- Primary Identification
+    lead_id TEXT PRIMARY KEY,                       -- Corresponds to requestReferenceNumber
+    unique_identifier TEXT NOT NULL,                -- Unique technical ID
+    
+    -- Loan Details
+    product_type VARCHAR(10) NOT NULL,              -- e.g., LAP, HL, PL
+    loan_amount_requested NUMERIC(15, 2) NOT NULL,  -- Loan requested in INR
+    loan_tenure_months INTEGER NOT NULL,            -- Tenure in months
+    loan_purpose_desc TEXT,                         -- Descriptive purpose of the loan
+    sourcing_channel VARCHAR(50),                   -- e.g., DIRECT, DSA
+    
+    -- Applicant Details (Main Applicant / Hirer)
+    applicant_name VARCHAR(100),
+    applicant_monthly_income NUMERIC(12, 2),        -- Monthly income
+    applicant_cibil_score VARCHAR(10),              -- The string '000-1' means no history
+    
+    -- Collateral Details (for LAP/HL)
+    collateral_type VARCHAR(50),                    -- e.g., Property, Gold
+    property_market_value NUMERIC(15, 2),           -- FMV of the asset
+    property_pincode VARCHAR(10),
+    
+    -- Risk & Status
+    next_followup_date DATE,                        -- Next planned action/contact
+    has_co_applicant BOOLEAN DEFAULT FALSE
+);
+```
+
+Sample seed data is provided in `refrences/NBFC Lead schema & sample data.sql`.
+
 ## References
 - `refrences/NBFC Lead schema & sample data.sql`: Example schema and seed snippets
 - `refrences/res.json`: Example data payload
