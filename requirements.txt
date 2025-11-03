@@ -12,3 +12,7 @@ langchain-community
 langchain-openai
 python-dotenv
 psycopg2-binary
+SQLAlchemy>=2.0.30
+openai>=1.44.0
+# Work around PyTorch/NumPy compat issues pulled via transformers
+numpy<2

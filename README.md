@@ -100,6 +100,12 @@ Type `exit` to quit.
   - Re-run `pip install -r requirements.txt`
 - **SQL permissions**
   - The configured DB user needs read access to relevant schemas/tables
+- **NumPy/PyTorch incompatibility (NumPy 2.x)**
+  - If you see an error like: "A module compiled using NumPy 1.x cannot be run in NumPy 2.x" (often triggered via `transformers`/`torch` imported by LangChain internals), install with pinned NumPy:
+    ```bash
+    pip install --upgrade "numpy<2"
+    ```
+  - This repo’s `requirements.txt` already pins `numpy<2` to avoid this.
 
 ## Security Notes
 - Do not commit `.env` files or secrets
