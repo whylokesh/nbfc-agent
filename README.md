@@ -1,20 +1,23 @@
 # NBFC AI Assistant
 
-An interactive command-line AI agent for NBFC (Non-Banking Financial Company) sales and loan teams. The assistant can:
+A FastAPI-based AI agent for NBFC (Non-Banking Financial Company) sales and loan teams. The assistant can:
 
 - Query and analyze lead/loan data from a PostgreSQL database via SQL tools
 - Provide structured, business-style insights
 - Notify the sales team with a custom tool (`ping_sales_team`)
 
-The agent is built with LangChain and OpenAI and runs locally as a simple REPL.
+The agent is built with LangChain, OpenAI, and FastAPI, providing a RESTful API for integration with web applications or other services.
 
 ## Features
 - Uses LangChain SQL toolkit to translate questions into SQL over your Postgres DB
 - Custom tool `ping_sales_team` to simulate notifying sales for a given lead
-- Conversation history preserved within the session for more contextual answers
+- Conversation history preserved within sessions for more contextual answers
+- RESTful API with automatic OpenAPI documentation
+- Session management for multi-user support
+- CORS enabled for frontend integration
 
 ## Project Structure
-- `main.py`: Entry point; config, agent setup, REPL loop
+- `main.py`: FastAPI server with agent setup and API endpoints
 - `requirements.txt`: Python dependencies
 - `refrences/`: Example schema/data references (not executed by the app)
 
@@ -62,33 +65,71 @@ Notes:
 - `main.py` automatically URL-encodes `DB_PASS` (so special characters like `@` are OK).
 - You may override any DB_* value via environment variables.
 
-5) Run the assistant
+5) Run the FastAPI server
 ```bash
 python main.py
 ```
-You should see:
-```
-🤖 NBFC AI Assistant Ready!
-Type 'exit' to quit.
+Or using uvicorn directly:
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Ask questions like:
+You should see:
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Application startup complete.
+```
+
+6) Access the API
+- **API Documentation (Swagger UI)**: http://localhost:8000/docs
+- **Alternative API Docs (ReDoc)**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/health
+
+## API Usage
+
+### Chat Endpoint
+Send a POST request to `/chat`:
+
+```bash
+curl -X POST "http://localhost:8000/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Show top 5 leads by score this week",
+    "session_id": null
+  }'
+```
+
+Response:
+```json
+{
+  "response": "Based on the query...",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Session Management**: 
+- Omit `session_id` in the first request to create a new session
+- Include the returned `session_id` in subsequent requests to maintain conversation history
+- Use `DELETE /chat/{session_id}` to clear a session's history
+
+### Example Questions
 - "Show top 5 leads by score this week"
 - "List applications rejected last month and reasons"
 - "Ping the sales team for lead 123 with an urgent follow-up"
-
-Type `exit` to quit.
 
 ## How It Works (High Level)
 - Builds a Postgres URI from environment variables and initializes `SQLDatabase`
 - Instantiates an OpenAI chat model (`gpt-4o`) via `langchain-openai`
 - Creates a LangChain SQL toolkit and adds a custom tool `ping_sales_team`
-- Runs a REPL that maintains `chat_history` and streams responses
+- FastAPI server exposes REST endpoints for chat interactions
+- Session-based chat history management (in-memory, can be upgraded to Redis/DB)
 
 ## Configuration Details
 - Model: `gpt-4o`, temperature 0
 - Connection string template: `postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}`
 - Password is URL-encoded automatically with `urllib.parse.quote_plus`
+- Server runs on `0.0.0.0:8000` by default (configurable via uvicorn)
+- CORS is enabled for all origins (restrict in production)
 
 ## Troubleshooting
 - **Connection errors to Postgres**

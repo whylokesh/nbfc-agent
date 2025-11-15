@@ -1,8 +1,13 @@
-# pip install -U "langchain" "langchain-openai" "langchain-community" "python-dotenv" "psycopg2-binary" "sqlalchemy"
+# pip install -U "langchain" "langchain-openai" "langchain-community" "python-dotenv" "psycopg2-binary" "sqlalchemy" "fastapi" "uvicorn[standard]"
 
 import os
+import uuid
 from urllib.parse import quote_plus
+from typing import Optional, Dict, List
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException  # pyright: ignore[reportMissingImports]
+from fastapi.middleware.cors import CORSMiddleware  # pyright: ignore[reportMissingImports]
+from pydantic import BaseModel
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from langchain_community.utilities.sql_database import SQLDatabase
@@ -34,9 +39,6 @@ toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 sql_tools = toolkit.get_tools()
 
 # Custom tool
-# def ping_sales_team(lead_id: str, message: str) -> str:
-#     """Send a message to the sales team."""
-#     return f"📨 Sales team notified for Lead {lead_id}: {message}"
 @tool("ping_sales_team", return_direct=True)
 def ping_sales_team(lead_id: str, message: str) -> str:
     """Send a message to the sales team about a specific lead."""
@@ -64,28 +66,112 @@ agent = create_agent(
     system_prompt=SYSTEM_PROMPT.strip(),
 )
 
-# Run the agent
-print("\n🤖 NBFC AI Assistant Ready!")
-print("Type 'exit' to quit.\n")
+# FastAPI app
+app = FastAPI(
+    title="NBFC AI Assistant API",
+    description="AI assistant for NBFC sales and loan teams with SQL query capabilities",
+    version="1.0.0"
+)
 
-chat_history = [{"role": "system", "content": SYSTEM_PROMPT.strip()}]
+# Enable CORS for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-while True:
-    user_input = input("You: ").strip()
-    if user_input.lower() in ["exit", "quit"]:
-        print("👋 Goodbye!")
-        break
+# In-memory session storage (in production, use Redis or a database)
+sessions: Dict[str, List[Dict[str, str]]] = {}
 
-    chat_history.append({"role": "user", "content": user_input})
+# Pydantic models for request/response
+class ChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
 
+class ChatResponse(BaseModel):
+    response: str
+    session_id: str
+
+class HealthResponse(BaseModel):
+    status: str
+    message: str
+
+@app.get("/", response_model=HealthResponse)
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "status": "ok",
+        "message": "NBFC AI Assistant API is running. Use /docs for API documentation."
+    }
+
+@app.get("/health", response_model=HealthResponse)
+async def health():
+    """Health check endpoint."""
+    return {
+        "status": "ok",
+        "message": "Service is healthy"
+    }
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """
+    Send a message to the AI assistant.
+    
+    - **message**: The user's message/question
+    - **session_id**: Optional session ID to maintain conversation history. 
+      If not provided, a new session will be created.
+    """
     try:
+        # Get or create session
+        session_id = request.session_id or str(uuid.uuid4())
+        
+        # Initialize chat history for new sessions
+        if session_id not in sessions:
+            sessions[session_id] = [{"role": "system", "content": SYSTEM_PROMPT.strip()}]
+        
+        chat_history = sessions[session_id]
+        
+        # Add user message to history
+        chat_history.append({"role": "user", "content": request.message})
+        
+        # Invoke agent
         response = agent.invoke({"messages": chat_history})
         output = response["messages"][-1].content
-        print("\nAssistant:", output, "\n")
-
-        # Append assistant message back to history
+        
+        # Add assistant response to history
         chat_history.append({"role": "assistant", "content": output})
-
+        
+        # Update session
+        sessions[session_id] = chat_history
+        
+        return ChatResponse(response=output, session_id=session_id)
+        
     except Exception as e:
-        print("⚠️ Error:", e)
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+
+@app.delete("/chat/{session_id}")
+async def clear_session(session_id: str):
+    """Clear chat history for a specific session."""
+    if session_id in sessions:
+        del sessions[session_id]
+        return {"status": "ok", "message": f"Session {session_id} cleared"}
+    else:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    # Get port from environment variable or default to 8000
+    port = int(os.getenv("PORT", "8000"))
+    host = os.getenv("HOST", "0.0.0.0")
+    
+    print(f"\n🚀 Starting NBFC AI Assistant API server...")
+    print(f"📍 Server running on http://127.0.0.1:{port} (localhost)")
+    print(f"📚 API Documentation: http://127.0.0.1:{port}/docs")
+    print(f"🔍 Alternative Docs: http://127.0.0.1:{port}/redoc")
+    print(f"❤️  Health Check: http://127.0.0.1:{port}/health\n")
+    
+    uvicorn.run(app, host=host, port=port)
 

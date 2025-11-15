@@ -16,3 +16,5 @@ SQLAlchemy>=2.0.30
 openai>=1.44.0
 # Work around PyTorch/NumPy compat issues pulled via transformers
 numpy<2
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
