@@ -5,8 +5,8 @@ from langchain.agents import create_agent
 
 from .tools.sql_tools import sql_tools
 from .tools.custom_tools import ping_sales_team
-from core.config import settings
-from agents.prompt import NBFC_SYSTEM_PROMPT
+from src.config.settings import settings
+from .prompt import NBFC_SYSTEM_PROMPT
 
 
 # CREATE AGENT

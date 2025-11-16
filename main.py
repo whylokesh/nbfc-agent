@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import chat_router, voice_router
+from src.routes import chat_router, voice_router
 
 app = FastAPI(
     title="NBFC AI Assistant API",

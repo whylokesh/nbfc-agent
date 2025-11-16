@@ -13,3 +13,6 @@ __pycache__/
 *.pyzwzwz   
 
 venv/
+
+__pycache__/
+*.pyc

@@ -2,7 +2,7 @@ from langchain_openai import ChatOpenAI
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_community.agent_toolkits.sql.base import SQLDatabaseToolkit
 
-from core.config import settings
+from src.config.settings import settings
 
 # Initialize DB
 db = SQLDatabase.from_uri(settings.DB_URI)

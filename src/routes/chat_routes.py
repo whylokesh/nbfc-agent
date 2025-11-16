@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from agents.nbfc_agent import process_message, clear_session
+from src.agents.nbfc_agent import process_message, clear_session
 
 router = APIRouter()
 

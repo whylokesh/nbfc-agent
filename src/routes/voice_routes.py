@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from pydantic import BaseModel
 
-from agents.nbfc_agent import process_message
+from src.agents.nbfc_agent import process_message
 
 router = APIRouter()
 
