@@ -1,0 +1,20 @@
+1. Make the db model more refined
+2. Integrate the ui with the voice - P1
+3. Context engineering - make the agent more friendly etc
+4. mobile and we interface - done
+5. Integrate with whatsapp
+6. Multi-agentic poc
+7. Deploy in Sk Env 
+8. agent development workflow app (platform)
+
+
+
+- easy to use
+- security
+- lines of code
+- integrations / flexibilites / verbosity
+- community support
+- additional packages
+- performace
+- llm support
+- 
