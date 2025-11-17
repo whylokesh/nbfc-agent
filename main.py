@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from src.routes import chat_router, voice_router
+import uvicorn
+from src.routes import chat_router, voice_router, run_voice_demo
 
 app = FastAPI(
     title="NBFC AI Assistant API",
@@ -21,5 +21,10 @@ app.include_router(chat_router, prefix="/chat")
 app.include_router(voice_router, prefix="/voice")
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+    # result = run_voice_demo(session_id=None)
+
+    # print("User said:", result["text"])
+    # print("Agent replied:", result["reply"])
+    # print("Output audio saved at:", result["saved_file"])

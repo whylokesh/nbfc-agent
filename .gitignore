@@ -16,3 +16,6 @@ venv/
 
 __pycache__/
 *.pyc
+
+audio/ai/*
+audio/user/*
