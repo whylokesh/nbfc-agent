@@ -1,134 +1,63 @@
-# 🏦 NBFC AI Assistant — Backend
+# 🏦 NBFC Voice AI Assistant — Backend
 
-### FastAPI • LangChain • PostgreSQL • GPT-4o • ElevenLabs Voice-to-Voice AI
-
-This repository powers a **Voice + Text NBFC AI Assistant**, capable of:
-
-* SQL‑aware GPT‑4o agent (auto-detects DB schema)
-* Multi-turn conversation memory
-* Voice-to-voice interaction (STT → LLM → TTS)
-* Modular and production-ready FastAPI backend
-* Built for NBFC Loan Origination System (LOS) workflows
+FastAPI + LangChain + PostgreSQL + ElevenLabs (Voice-to-Voice AI)
 
 ---
 
-## 🚀 Features
+## 🚀 Overview
 
-### 🤖 AI Agent (LangChain + GPT‑4o)
+This backend powers an **NBFC (Non-Banking Financial Company) AI Assistant** that supports:
 
-* Fully SQL-aware using `SQLDatabaseToolkit`
-* Agent automatically reads your **database schema**
-* Executes safe SQL queries
-* Custom tools (e.g., `ping_sales_team`)
-* Designed for NBFC workflows: leads, applications, repayments, disbursal
+### ✔ Text Chat (SQL Agent)
 
-### 🎤 Voice-to-Voice AI
+* Queries PostgreSQL database
+* Analyzes leads, applications, accounts
+* Performs tool-calling (e.g., notify sales team)
 
-* Accepts audio input (MP3/WAV)
-* Converts audio → text (ElevenLabs STT)
-* Sends text to NBFC Agent
-* Converts reply text → audio (ElevenLabs TTS)
-* Returns JSON + Base64 audio OR audio stream
+### ✔ Voice-to-Voice Agent
 
-### 📡 FastAPI API Server
+Upload a voice message →
+**STT → AI Reasoning → TTS → Return audio + text metadata**
 
-* `/chat` → text chat API
-* `/voice` → voice-to-voice API
-* `/voice/main` → JSON + Base64 audio
-* `/voice/test` → static test MP3
-* CORS enabled for frontend integrations
+Works with **ElevenLabs STT & TTS**.
 
-### 🧠 Session Memory
+### ✔ Session Memory
 
-* Conversation memory stored per-session
-* Sessions handled in `session_manager.py`
+Each conversation continues the context across requests.
 
 ---
 
-## 📦 Installation
+## 🏗️ Tech Stack
 
-### 1. Clone the Repository
-
-```bash
-git clone <repo-url>
-cd nbfc-agent
-```
-
-### 2. Create Virtual Environment
-
-```bash
-python -m venv venv
-source venv/bin/activate   # macOS/Linux
-venv\Scripts\activate      # Windows
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
+| Component     | Technology                    |
+| ------------- | ----------------------------- |
+| API Framework | **FastAPI**                   |
+| AI Reasoning  | **LangChain + OpenAI GPT-4o** |
+| DB            | **PostgreSQL + SQLAlchemy**   |
+| Voice STT/TTS | **ElevenLabs API**            |
+| Agent Tools   | SQL Toolkit + Custom Tools    |
+| Deployment    | Uvicorn / Docker              |
 
 ---
 
-## 🔐 Environment Variables (`.env`)
-
-Create a `.env` file in the project root:
-
-```env
-OPENAI_API_KEY=YOUR_OPENAI_KEY
-ELEVENLABS_API_KEY=YOUR_11LABS_KEY
-
-DB_USER=postgres
-DB_PASS=@POSTGRES_9
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_NAME=nbfc_db
-```
-
----
-
-## ▶️ Running the Server
-
-```bash
-python main.py
-```
-
-The server runs at:
+## 📂 Project Structure
 
 ```
-http://localhost:8000
-```
-
-API Docs:
-
-```
-http://localhost:8000/docs
-```
-
----
-
-# 🗂️ Folder Structure
-
-```
-nbfc-agent/
-│
-├── main.py
-├── .env
-├── requirements.txt
+project/
+│── main.py
+│── requirements.txt
+│── README.md
 │
 ├── src/
 │   ├── agents/
 │   │   └── nbfc_agent.py
-│   │
 │   ├── services/
 │   │   └── elevenlabs.py
-│   │
 │   ├── routes/
 │   │   ├── chat.py
 │   │   └── voice.py
-│   │
-│   └── utils/
-│       └── session_manager.py
+│   └── config/
+│       └── settings.py
 │
 └── audio/
     ├── user/
@@ -137,122 +66,245 @@ nbfc-agent/
 
 ---
 
-# 🔊 API Endpoints
+## 🔧 Installation
 
-## 1️⃣ **Text Chat Endpoint**
+### 1. Clone repo
 
-### `POST /chat`
+```sh
+git clone https://github.com/whylokesh/nbfc-agent.git
+cd nbfc-ai-backend
+```
 
-**Request:**
+### 2. Create virtual environment
+
+```sh
+python -m venv venv
+source venv/bin/activate   # Mac/Linux
+venv\Scripts\activate      # Windows
+```
+
+### 3. Install dependencies
+
+```sh
+pip install -r requirements.txt
+```
+
+---
+
+## 🔑 Environment Variables
+
+Create **`.env`** file:
+
+```
+# PostgreSQL
+DB_USER=postgres
+DB_PASS=yourpassword
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=nbfc_db
+
+# OpenAI
+OPENAI_API_KEY=your_openai_key
+
+# ElevenLabs
+ELEVENLABS_API_KEY=your_api_key
+ELEVENLABS_STT_MODEL=scribe_v1
+ELEVENLABS_TTS_MODEL=eleven_multilingual_v2
+ELEVENLABS_VOICE_ID=your_voice_id
+```
+
+---
+
+## ▶ Running the server
+
+```
+uvicorn main:app --reload
+```
+
+Server runs at:
+
+* **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+* **Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
+
+---
+
+# 📌 API Endpoints
+
+---
+
+# 🟦 1. Chat API (Text → AI → Text)
+
+### **POST /chat**
+
+Request:
 
 ```json
 {
   "message": "Show me leads with low CIBIL score",
-  "session_id": "optional"
+  "session_id": null
 }
 ```
 
-**Response:**
+Response:
 
 ```json
 {
-  "response": "Formatted business answer",
-  "session_id": "abcd-1234"
+  "response": "Here are the top low-CIBIL leads...",
+  "session_id": "d9b8df12-..."
 }
 ```
 
 ---
 
-## 2️⃣ **Voice-to-Voice Endpoint**
+# 🟪 2. Voice API (Audio → STT → AI → TTS → Audio Stream)
 
-### `POST /voice`
+### **POST /voice**
 
-**Form-Data:**
+Returns **raw MP3 stream** (useful for mobile apps, speakers).
+
+```sh
+curl -X POST "http://localhost:8000/voice" \
+  -F "file=@demo.mp3"
+```
+
+Response: **audio/mpeg stream** with headers:
 
 ```
-file: <audio.mp3>
-session_id: optional
+X-Session-ID: abc123
+X-STT-Text: what is the status of lead 23
+X-Agent-Reply: the lead is in DDE stage...
 ```
-
-**Returns:**
-
-* Streaming MP3 audio
-* Text via response headers
 
 ---
 
-## 3️⃣ **Primary Voice API (JSON + Base64)**
+# 🟩 3. Voice API (Audio → JSON + base64 Audio)
 
-### `POST /voice/main`
+### **POST /voice/main**
 
-**Returns:**
+This returns **JSON + base64 audio**, perfect for web apps.
+
+```sh
+curl -X POST "http://localhost:8000/voice/main" \
+  -F "file=@demo.mp3"
+```
+
+Response:
 
 ```json
 {
-  "text": "User said...",
-  "reply": "AI reply...",
-  "session_id": "1234",
-  "audio_base64": "..."
+  "text": "what is the cibil score of lead 103",
+  "reply": "Lead 103 has a CIBIL score of 742.",
+  "audio_base64": "SUQzBAAAAAA...",
+  "session_id": "a13c91ab-..."
 }
 ```
 
 ---
 
-## 4️⃣ **Test Endpoint (Static file)**
+# 🟨 4. Test Endpoint (No API usage, returns static MP3)
 
-### `GET /voice/test`
+### **POST /voice/test**
 
-Useful for frontend integration without burning API credits.
+Useful when frontend testing without consuming GPT or ElevenLabs credits.
 
-Returns a static MP3 in the same structure as `/main`.
-
----
-
-# 🛠️ Tech Stack
-
-| Component          | Technology                |
-| ------------------ | ------------------------- |
-| LLM                | GPT‑4o (OpenAI)           |
-| STT                | ElevenLabs Speech-to-Text |
-| TTS                | ElevenLabs Voice API      |
-| AI Agent           | LangChain `create_agent`  |
-| Database           | PostgreSQL + SQLAlchemy   |
-| Backend            | FastAPI                   |
-| Frontend (planned) | Next.js Voice UI          |
+```json
+{
+  "text": "Test STT Text",
+  "reply": "Test AI Response",
+  "audio_base64": "BASE64_DATA",
+  "session_id": "test-session-123"
+}
+```
 
 ---
 
-# 🧪 Testing (Postman)
+# 🧠 Agent Features
 
-### Upload audio:
+### ✔ SQL Querying
 
-* Method: `POST`
-* URL: `http://localhost:8000/voice`
-* Body → Form-Data
+The agent automatically scans the DB schema and writes/executes SQL queries.
 
-  * `file`: Upload MP3/WAV
-  * `session_id`: optional
+### ✔ Tool Calling
 
----
+Example custom tool:
 
-# 📌 Notes
+```python
+@tool("ping_sales_team")
+def ping_sales_team(lead_id: str, message: str):
+    return f"Message sent for Lead {lead_id}: {message}"
+```
 
-* Interactive memory is session-based
-* Audio outputs saved under `/audio/ai`
-* User uploads saved under `/audio/user`
+### ✔ Conversation Memory
 
----
-
-# 💬 Support
-
-For issues or feature requests, open an issue in the repository.
+Stored in local in-memory dict.
+(Production plan: Redis)
 
 ---
 
-# 🟢 License
+# 🎤 Voice Pipeline
 
-MIT License
+```
+User Audio (mp3/webm)
+      ↓
+ElevenLabs STT → text
+      ↓
+NBFC GPT Agent → reply text
+      ↓
+ElevenLabs TTS → mp3
+      ↓
+Frontend (Next.js)
+```
 
 ---
 
-Enjoy building your NBFC Voice AI 🚀
+# 🧪 Testing Voice Upload (Postman)
+
+### Request
+
+* Method: **POST**
+* URL: `http://localhost:8000/voice/main`
+* Body → form-data:
+
+  * **file** → upload `.mp3`
+  * **session_id** (optional)
+
+### Response
+
+Base64 audio + texts.
+
+---
+
+# 📦 Build for Production
+
+```
+pip install gunicorn uvicorn
+gunicorn main:app -k uvicorn.workers.UvicornWorker
+```
+
+---
+
+# 💡 Future Enhancements
+
+* Redis for long-term session memory
+* Multi-agent (collection officer, credit officer, DSA assistant)
+* File upload (bank statements, Aadhaar OCR)
+* Realtime streaming audio
+* WhatsApp bot integration
+
+---
+
+# ❤️ Author
+
+Built by **Lokesh Jha (LJ)**
+NBFC + AI Engineering
+
+---
+
+If you want, I can also generate:
+
+✅ Swagger-styled docs
+✅ Mermaid DB diagram
+✅ System Architecture diagram
+✅ Frontend README (Next.js)
+
+Just tell me!

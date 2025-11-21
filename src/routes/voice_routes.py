@@ -166,8 +166,8 @@ async def voice_test_endpoint():
 
         # Fixed dummy values
         return VoiceJSONResponse(
-            text="(Test STT Text)",
-            reply="(Test AI Response)",
+            text="Test STT Text",
+            reply="Test AI Response",
             audio_base64=audio_base64,
             session_id="test-session-123",
         )
